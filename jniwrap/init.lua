@@ -58,7 +58,7 @@ function jniwrap.calculateSignature(method)
 	return ("(%s)%s"):format(table.concat(args), rettype), rettype
 end
 
-function jniwrap.wrapObject(object, class)
+function jniwrap.wrapObject(class, object)
 	return setmetatable({[instance] = object}, {__index = class})
 end
 
@@ -86,7 +86,7 @@ function jniwrap.wrapMethod(class, name, def, out)
 	elseif def.constructor then
 		return function(...)
 			local obj = env[0].NewObject(env, class, methodid, ...)
-			return jniwrap.wrapObject(obj, out)
+			return jniwrap.wrapObject(out, obj)
 		end
 	else
 		return function(self, ...)
@@ -120,6 +120,7 @@ function jniwrap.wrapClass(definition)
 		end
 	end
 
+	setmetatable(out, {__call = jniwrap.wrapObject})
 	return out
 end
 
