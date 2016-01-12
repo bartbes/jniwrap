@@ -10,5 +10,5 @@ clean:
 run: all
 	env LD_LIBRARY_PATH=launcher java -cp launcher Test
 
-jniwrap/cdefs.lua: dumpcdefs.sh
-	./dumpcdefs.sh > $@
+jniwrap/cdefs.lua: aosp-jni.h dumpcdefs.sh
+	./dumpcdefs.sh $< > $@
