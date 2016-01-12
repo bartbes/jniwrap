@@ -127,7 +127,9 @@ function jniwrap.wrapClass(definition)
 	local classname = definition.class.name:gsub("%.", "/")
 	local class = env[0].FindClass(env, classname)
 	class = ffi.cast("jclass", env[0].NewGlobalRef(env, class))
-	-- TODO DeleteGlobalRef
+	ffi.gc(class, function()
+		env[0].DeleteGlobalRef(env, class)
+	end)
 
 	definition.class = nil
 
@@ -156,11 +158,10 @@ function jniwrap.wrapClass(definition)
 end
 
 function jniwrap.fromJavaString(str)
-	local isCopy = ffi.new("jboolean[1]")
-	local chars = env[0].GetStringUTFChars(env, str, isCopy)
+	local chars = env[0].GetStringUTFChars(env, str, nil)
 	local length = env[0].GetStringUTFLength(env, str)
-
 	local luastr = ffi.string(chars, length)
+	env[0].ReleaseStringUTFChars(env, str, chars)
 	return (luastr:gsub(string.char(0xc0, 0x80), "\0"))
 end
 
