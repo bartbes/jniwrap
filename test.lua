@@ -14,6 +14,7 @@ local function main()
 	ExtraTest.someJava()
 	local e = ExtraTest.ExtraTest()
 	e:someMoreJava()
+	e:printString(jni.toJavaString("Hello, world!"))
 
 	-- java.util.UUID
 	local UUID = jni.wrapClass("UUID.ini")

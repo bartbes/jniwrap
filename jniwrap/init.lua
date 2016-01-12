@@ -166,6 +166,12 @@ function jniwrap.fromJavaString(str)
 end
 
 function jniwrap.toJavaString(str)
+	local modified = str:gsub("\0", string.char(0xc0, 0x80))
+	return env[0].NewStringUTF(env, modified)
+end
+
+function jniwrap.unwrapObject(obj)
+	return obj[instance]
 end
 
 return jniwrap
