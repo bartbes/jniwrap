@@ -22,7 +22,23 @@ local simpleTypeSignatures =
 	void = "V",
 }
 local invSimpleTypeSignatures = {}
-local instance = {}
+local typeAliases =
+{
+	Boolean = "Ljava/lang/Boolean;",
+	Byte = "Ljava/lang/Byte;",
+	Character = "Ljava/lang/Character;",
+	Class = "Ljava/lang/Class;",
+	Double = "Ljava/lang/Double;",
+	Exception = "Ljava/lang/Exception;",
+	Float = "Ljava/lang/Float;",
+	Integer = "Ljava/lang/Integer;",
+	Long = "Ljava/lang/Long;",
+	Object = "Ljava/lang/Object;",
+	Short = "Ljava/lang/Short;",
+	String = "Ljava/lang/String;",
+	Throwable = "Ljava/lang/Throwable;",
+	Void = "Ljava/lang/Void;",
+}
 
 for i, v in pairs(simpleTypeSignatures) do
 	invSimpleTypeSignatures[v] = i
@@ -30,14 +46,21 @@ end
 
 local jniwrap = {}
 local env
+local instance = {}
 
 function jniwrap.setEnv(_env)
 	env = _env
 end
 
-function jniwrap.signatureFor(typename)
+function jniwrap.signatureFor(typename, self)
 	if simpleTypeSignatures[typename] then
 		return simpleTypeSignatures[typename]
+	end
+	if typeAliases[typename] then
+		return typeAliases[typename]
+	end
+	if typename == "self" and self then
+		return "L" .. self .. ";"
 	end
 	if typename:match("%[%]$") then
 		return "[" .. jniwrap.signatureFor(typename:sub(1, -3))
@@ -45,15 +68,15 @@ function jniwrap.signatureFor(typename)
 	return "L" .. typename:gsub("%.", "/") .. ";"
 end
 
-function jniwrap.calculateSignature(method)
+function jniwrap.calculateSignature(method, self)
 	local args = {}
 	for i = 1, math.huge do
 		local arg = method["arg" .. i]
 		if not arg then break end
-		table.insert(args, jniwrap.signatureFor(arg))
+		table.insert(args, jniwrap.signatureFor(arg, self))
 	end
 
-	local rettype = jniwrap.signatureFor(method.returnType or "void")
+	local rettype = jniwrap.signatureFor(method.returnType or "void", self)
 
 	return ("(%s)%s"):format(table.concat(args), rettype), rettype
 end
@@ -62,8 +85,8 @@ function jniwrap.wrapObject(class, object)
 	return setmetatable({[instance] = object}, {__index = class})
 end
 
-function jniwrap.wrapMethod(class, name, def, out)
-	local signature, rettype = jniwrap.calculateSignature(def)
+function jniwrap.wrapMethod(class, name, def, out, self)
+	local signature, rettype = jniwrap.calculateSignature(def, self)
 	print("Signature for ", name, " is ", signature)
 
 	local methodid
@@ -116,7 +139,7 @@ function jniwrap.wrapClass(definition)
 		end
 
 		if type == "method" then
-			out[i] = jniwrap.wrapMethod(class, name, v, out)
+			out[i] = jniwrap.wrapMethod(class, name, v, out, classname)
 		end
 	end
 
