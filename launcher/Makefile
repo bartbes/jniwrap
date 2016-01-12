@@ -13,9 +13,6 @@ all: Test.class ExtraTest.class libTest.so
 clean:
 	$(RM) *.class *.so Test.h
 
-run: all
-	env LD_LIBRARY_PATH=. $(JAVA) -cp . Test
-
 libTest.so: Test.c Test.h
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) -fPIC -shared -o $@ $< $(LDADD)
 
