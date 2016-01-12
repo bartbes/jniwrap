@@ -1,1 +1,5 @@
 \.swp$
+\.class$
+\.so$
+^jniwrap/cdefs\.lua$
+^launcher/Test\.h$
