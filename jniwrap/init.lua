@@ -16,7 +16,7 @@ local simpleTypeSignatures =
 	char = "C",
 	short = "S",
 	int = "I",
-	long = "L",
+	long = "J",
 	float = "F",
 	double = "D",
 	void = "V",
@@ -53,6 +53,10 @@ function jniwrap.calculateSignature(method)
 	return ("(%s)%s"):format(table.concat(args), rettype), rettype
 end
 
+function jniwrap.wrapObject(object, class)
+	return setmetatable({[instance] = object}, {__index = class})
+end
+
 function jniwrap.wrapMethod(env, class, name, def, out)
 	local signature, rettype = jniwrap.calculateSignature(def)
 	print("Signature for ", name, " is ", signature)
@@ -77,7 +81,7 @@ function jniwrap.wrapMethod(env, class, name, def, out)
 	elseif def.constructor then
 		return function(...)
 			local obj = env[0].NewObject(env, class, methodid, ...)
-			return setmetatable({[instance] = obj}, {__index = out})
+			return jniwrap.wrapObject(obj, out)
 		end
 	else
 		return function(self, ...)
@@ -86,13 +90,13 @@ function jniwrap.wrapMethod(env, class, name, def, out)
 	end
 end
 
-function jniwrap.wrap(env, definition)
+function jniwrap.wrapClass(env, definition)
 	if type(definition) == "string" then
 		definition = inifile.parse(definition)
 	end
 
 	local out = {}
-	local classname = definition.class.name
+	local classname = definition.class.name:gsub("%.", "/")
 	local class = env[0].FindClass(env, classname)
 	class = ffi.cast("jclass", env[0].NewGlobalRef(env, class))
 	-- TODO DeleteGlobalRef
@@ -112,6 +116,18 @@ function jniwrap.wrap(env, definition)
 	end
 
 	return out
+end
+
+function jniwrap.fromJavaString(env, str)
+	local isCopy = ffi.new("jboolean[1]")
+	local chars = env[0].GetStringUTFChars(env, str, isCopy)
+	local length = env[0].GetStringUTFLength(env, str)
+
+	local luastr = ffi.string(chars, length)
+	return (luastr:gsub(string.char(0xc0, 0x80), "\0"))
+end
+
+function jniwrap.toJavaString(env, str)
 end
 
 return jniwrap
