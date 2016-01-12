@@ -14,7 +14,7 @@ cpp \
 		-I "$JNI_INCLUDE_PATH" \
 		-I "$JNI_INCLUDE_PATH/linux" \
 		"$JNI_H" |\
-	sed -n -e '/typedef/,$p' |\
+	sed -n -e '/typedef.* j/,$p' |\
 	sed -e '/^\s*#/d' -e '/^\s*$/d'
 
 echo ']]'
