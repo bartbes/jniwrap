@@ -52,15 +52,15 @@ function jniwrap.setEnv(_env)
 	env = _env
 end
 
-function jniwrap.signatureFor(typename, self)
+function jniwrap.signatureFor(typename, aliases)
 	if simpleTypeSignatures[typename] then
 		return simpleTypeSignatures[typename]
 	end
 	if typeAliases[typename] then
 		return typeAliases[typename]
 	end
-	if typename == "self" and self then
-		return "L" .. self .. ";"
+	if aliases[typename] then
+		return jniwrap.signatureFor(aliases[typename], aliases)
 	end
 	if typename:match("%[%]$") then
 		return "[" .. jniwrap.signatureFor(typename:sub(1, -3))
@@ -68,15 +68,15 @@ function jniwrap.signatureFor(typename, self)
 	return "L" .. typename:gsub("%.", "/") .. ";"
 end
 
-function jniwrap.calculateSignature(method, self)
+function jniwrap.calculateSignature(method, aliases)
 	local args = {}
 	for i = 1, math.huge do
 		local arg = method["arg" .. i]
 		if not arg then break end
-		table.insert(args, jniwrap.signatureFor(arg, self))
+		table.insert(args, jniwrap.signatureFor(arg, aliases))
 	end
 
-	local rettype = jniwrap.signatureFor(method.returnType or "void", self)
+	local rettype = jniwrap.signatureFor(method.returnType or "void", aliases)
 
 	return ("(%s)%s"):format(table.concat(args), rettype), rettype
 end
@@ -85,8 +85,8 @@ function jniwrap.wrapObject(class, object)
 	return setmetatable({[instance] = object}, {__index = class})
 end
 
-function jniwrap.wrapMethod(class, name, def, out, self)
-	local signature, rettype = jniwrap.calculateSignature(def, self)
+function jniwrap.wrapMethod(class, name, def, out, aliases)
+	local signature, rettype = jniwrap.calculateSignature(def, aliases)
 	print("Signature for ", name, " is ", signature)
 
 	local methodid
@@ -131,6 +131,14 @@ function jniwrap.wrapClass(definition)
 
 	definition.class = nil
 
+	local aliases = {self = classname}
+	if definition[":aliases:"] then
+		for i, v in pairs(definition[":aliases:"]) do
+			aliases[i] = v
+		end
+		definition[":aliases:"] = nil
+	end
+
 	for i, v in pairs(definition) do
 		local name = v.name or i
 		local type = v.type or "method"
@@ -139,7 +147,7 @@ function jniwrap.wrapClass(definition)
 		end
 
 		if type == "method" then
-			out[i] = jniwrap.wrapMethod(class, name, v, out, classname)
+			out[i] = jniwrap.wrapMethod(class, name, v, out, aliases)
 		end
 	end
 
