@@ -17,7 +17,7 @@ local function main()
 
 	-- java.util.UUID
 	local UUID = jni.wrapClass("UUID.ini")
-	local u = jni.wrapObject(UUID.randomUUID(), UUID)
+	local u = UUID(UUID.randomUUID())
 	print(jni.fromJavaString(u:toString()))
 end
 
