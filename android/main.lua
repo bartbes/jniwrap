@@ -1,6 +1,13 @@
 local jni = require "jniwrap"
 local ffi = require "ffi"
 
+local logMsg = ""
+local function log(fmt, ...)
+	local msg = fmt:format(...)
+	print(msg)
+	logMsg = logMsg .. "\n" .. msg
+end
+
 function love.load()
 	timer1 = 5
 	timer2 = 10
@@ -18,11 +25,13 @@ function love.load()
 	Activity = jni.wrapClass("android/Activity.ini")
 	Intent = jni.wrapClass("android/Intent.ini")
 	Uri = jni.wrapClass("android/Uri.ini")
+	UriBuilder = jni.wrapClass("android/UriBuilder.ini")
+	ActivityInfo = jni.wrapClass("android/ActivityInfo.ini")
 
 	activity = ffi.C.SDL_AndroidGetActivity()
-	print("Raw activity: ", activity)
+	log("Raw activity: %s", tostring(activity))
 	activity = Activity(activity)
-	print("Wrapped activity: ", activity)
+	log("Wrapped activity: %s", tostring(activity))
 end
 
 function love.update(dt)
@@ -31,14 +40,21 @@ function love.update(dt)
 
 	if timer1 == 0 and not switched then
 		switched = true
-		--activity:setRequestedOrientation(1)
+		log("Requested new orientation")
+		--activity:setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT())
+		log("  Skipped (bugged)")
 	end
 
 	if timer2 == 0 and not opened then
 		opened = true
-		local target = Uri.parse(jni.toJavaString("https://love2d.org"))
-		local ACTION_VIEW = jni.toJavaString("android.intent.action.VIEW")
-		local intent = Intent.Intent2(ACTION_VIEW, target)
+		local target = Uri.parse(jni.toJavaString("https://love2d.org/"))
+		log("Target: %s", tostring(target))
+
+		local intent = Intent.Intent1(Intent.ACTION_VIEW())
+		intent:setData(target)
+		intent:addFlags(Intent.FLAG_ACTIVITY_NEW_TASK())
+
+		log("Starting intent: %s", tostring(jni.unwrapObject(intent)))
 		activity:startActivity(jni.unwrapObject(intent))
 	end
 end
@@ -46,4 +62,5 @@ end
 function love.draw()
 	love.graphics.print("Switching in " .. timer1, 10, 10)
 	love.graphics.print("Browsing in " .. timer2, 10, 20)
+	love.graphics.print(logMsg, 10, 35)
 end
