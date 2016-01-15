@@ -87,7 +87,6 @@ end
 
 function jniwrap.wrapMethod(class, name, def, out, aliases)
 	local signature, rettype = jniwrap.calculateSignature(def, aliases)
-	print("Signature for ", name, " is ", signature)
 
 	local methodid
 	local callf = "Call"
@@ -118,6 +117,44 @@ function jniwrap.wrapMethod(class, name, def, out, aliases)
 	end
 end
 
+function jniwrap.wrapField(class, name, def, out, aliases)
+	local signature = jniwrap.signatureFor(def.type, aliases)
+
+	local fieldid
+	local callf = ""
+	if def.static then
+		fieldid = env[0].GetStaticFieldID(env, class, name, signature)
+		callf = callf .. "Static"
+	else
+		fieldid = env[0].GetFieldID(env, class, name, signature)
+	end
+
+	local rettype = invSimpleTypeSignatures[signature] or "object"
+	rettype = rettype:sub(1, 1):upper() .. rettype:sub(2)
+	callf = callf .. rettype .. "Field"
+
+	local getf = "Get" .. callf
+	local setf = "Set" .. callf
+
+	if def.static then
+		return function(...)
+			if select("#", ...) > 0 then
+				return env[0][setf](env, class, fieldid, (...))
+			else
+				return env[0][getf](env, class, fieldid)
+			end
+		end
+	else
+		return function(self, ...)
+			if select("#", ...) > 0 then
+				return env[0][setf](env, self[instance], fieldid, (...))
+			else
+				return env[0][getf](env, self[instance], fieldid)
+			end
+		end
+	end
+end
+
 function jniwrap.wrapClass(definition)
 	if type(definition) == "string" then
 		definition = inifile.parse(definition)
@@ -143,12 +180,13 @@ function jniwrap.wrapClass(definition)
 
 	for i, v in pairs(definition) do
 		local name = v.name or i
-		local type = v.type or "method"
 		if v.constructor then
 			name = "<init>"
 		end
 
-		if type == "method" then
+		if v.field then
+			out[i] = jniwrap.wrapField(class, name, v, out, aliases)
+		else
 			out[i] = jniwrap.wrapMethod(class, name, v, out, aliases)
 		end
 	end

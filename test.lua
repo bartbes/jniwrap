@@ -16,6 +16,11 @@ local function main()
 	e:someMoreJava()
 	e:printString(jni.toJavaString("Hello, world!"))
 
+	print(e:myIntField())
+	e:myIntField(21)
+	e:doubleInt()
+	assert(e:myIntField() == 42)
+
 	-- java.util.UUID
 	local UUID = jni.wrapClass("UUID.ini")
 	local u = UUID(UUID.randomUUID())
