@@ -15,4 +15,11 @@ public class ExtraTest
 		System.out.print("Input string: ");
 		System.out.println(arg);
 	}
+
+	public int myIntField = 5;
+
+	public void doubleInt()
+	{
+		myIntField = 2*myIntField;
+	}
 }
