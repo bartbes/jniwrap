@@ -3,6 +3,44 @@ local ffi = require "ffi"
 return function(jniwrap)
 	local instance = {}
 
+	local ThrowableDef =
+	{
+		class = {name = "java.lang.Throwable"},
+		toString = {returnType = "String"},
+	}
+
+	local inException = false
+	local Throwable
+	local function errorOnException()
+		if jniwrap.env.ExceptionCheck() == 0 then return end
+
+		-- Deal with exceptions during exception handling
+		if inException then
+			error("Exception handling exception")
+		end
+		inException = true
+
+		-- Now get and clear (!) our exception
+		local exception = jniwrap.env.ExceptionOccurred()
+		jniwrap.env.ExceptionDescribe()
+		jniwrap.env.ExceptionClear()
+
+		-- Try to wrap throwable
+		if not Throwable then
+			Throwable = jniwrap.wrapClass(ThrowableDef)
+		end
+		exception = Throwable(exception)
+
+		-- Now finally we get to extract data
+		local message = jniwrap.fromJavaString(exception:toString())
+
+		-- We're safe, we've handled the exception
+		inException = false
+
+		-- And finally create an error
+		error(message)
+	end
+
 	function jniwrap.wrapObject(class, object)
 		return setmetatable({[instance] = object}, {__index = class})
 	end
@@ -85,6 +123,8 @@ return function(jniwrap)
 		local out = {}
 		local classname = definition.class.name:gsub("%.", "/")
 		local class = jniwrap.env.FindClass(classname)
+		errorOnException()
+
 		class = ffi.cast("jclass", jniwrap.env.NewGlobalRef(class))
 		ffi.gc(class, function()
 			jniwrap.env.DeleteGlobalRef(class)
@@ -108,8 +148,10 @@ return function(jniwrap)
 
 			if v.field then
 				out[i] = jniwrap.wrapField(class, name, v, out, aliases)
+				errorOnException()
 			else
 				out[i] = jniwrap.wrapMethod(class, name, v, out, aliases)
+				errorOnException()
 			end
 		end
 
