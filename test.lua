@@ -10,7 +10,7 @@ local function main()
 	jni.setEnv(env)
 
 	-- My own class, for testing
-	local ExtraTest = jni.wrapClass("ExtraTest.ini")
+	local ExtraTest = jni.wrapClass("def/ExtraTest.ini")
 	ExtraTest.someJava()
 	local e = ExtraTest.ExtraTest()
 	e:someMoreJava()
@@ -22,7 +22,7 @@ local function main()
 	assert(e:myIntField() == 42)
 
 	-- java.util.UUID
-	local UUID = jni.wrapClass("UUID.ini")
+	local UUID = jni.wrapClass("def/UUID.ini")
 	local u = UUID(UUID.randomUUID())
 	print(jni.fromJavaString(u:toString()))
 end
