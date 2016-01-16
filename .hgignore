@@ -2,3 +2,4 @@
 \.class$
 \.so$
 ^launcher/Test\.h$
+^andtest\.love$
