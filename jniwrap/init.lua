@@ -15,7 +15,7 @@ function jniwrap.parseIni(filename)
 	return inifile.parse(filename)
 end
 
-for i, v in ipairs{"env", "types", "wrap"} do
+for i, v in ipairs{"env", "types", "wrap", "dump"} do
 	local f = require(basename .. v)
 	f(jniwrap)
 end
