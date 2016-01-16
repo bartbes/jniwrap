@@ -51,7 +51,7 @@ return function(jniwrap)
 			return jniwrap.signatureFor(aliases[typename], aliases)
 		end
 		if typename:match("%[%]$") then
-			return "[" .. jniwrap.signatureFor(typename:sub(1, -3))
+			return "[" .. jniwrap.signatureFor(typename:sub(1, -3), aliases)
 		end
 		return "L" .. typename:gsub("%.", "/") .. ";"
 	end
