@@ -8,7 +8,7 @@ clean:
 	$(RM) jniwrap/cdefs.lua
 
 run: all
-	env LD_LIBRARY_PATH=launcher java -cp launcher Test
+	env LD_LIBRARY_PATH=launcher java -cp launcher Test $(RUNARGS)
 
 jniwrap/cdefs.lua: aosp-jni.h dumpcdefs.sh
 	./dumpcdefs.sh $< > $@
