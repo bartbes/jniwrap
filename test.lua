@@ -21,6 +21,16 @@ local function main()
 	e:doubleInt()
 	assert(e:myIntField() == 42)
 
+	local ints = jni.wrapArray("int", e:getIntValues())
+	for i, v in ints:ipairs() do
+		print(("Integer %d: %d"):format(i+1, v))
+	end
+
+	local constants = jni.wrapArray("double", e:mathConstants())
+	assert(math.pi-constants[0] < 0.1)
+	constants[2] = 2
+	assert(e:getSqrtTwo() == 2)
+
 	-- java.util.UUID
 	local UUID = jni.wrapClass("def/UUID.ini")
 	local u = UUID(UUID.randomUUID())
