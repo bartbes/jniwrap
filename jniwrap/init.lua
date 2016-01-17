@@ -25,4 +25,7 @@ for i, v in ipairs{"env", "types", "wrap", "array", "dump"} do
 	f(jniwrap)
 end
 
+-- Make sure 'jniwrap' and 'jniwrap.init' are set
+package.loaded[basename:sub(1, -2)] = jniwrap
+package.loaded[basename .. "init"] = jniwrap
 return jniwrap
