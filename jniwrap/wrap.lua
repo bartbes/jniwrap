@@ -42,6 +42,7 @@ return function(jniwrap)
 	end
 
 	function jniwrap.wrapObject(class, object)
+		jniwrap.doGc(object)
 		return setmetatable({[instance] = object}, {__index = class})
 	end
 
