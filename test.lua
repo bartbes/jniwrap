@@ -1,5 +1,6 @@
 local function main()
 	local jni = require "jniwrap.init"
+	local import = require "jniwrap.import"
 	local ffi = require "ffi"
 
 	ffi.cdef [[
@@ -9,8 +10,10 @@ local function main()
 	local env = ffi.C.getGlobalEnv()
 	jni.setEnv(env)
 
+	import:setPrefix("def")
+
 	-- My own class, for testing
-	local ExtraTest = jni.wrapClass("def/ExtraTest.ini")
+	local ExtraTest = import "ExtraTest"
 	ExtraTest.someJava()
 	local e = ExtraTest.ExtraTest()
 	e:someMoreJava()
@@ -32,7 +35,7 @@ local function main()
 	assert(e:getSqrtTwo() == 2)
 
 	-- java.util.UUID
-	local UUID = jni.wrapClass("def/UUID.ini")
+	local UUID = import "java.util.UUID"
 	local u = UUID(UUID.randomUUID())
 	print(jni.fromJavaString(u:toString()))
 end
