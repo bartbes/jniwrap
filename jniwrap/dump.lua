@@ -114,10 +114,9 @@ return function(jniwrap)
 			addModifiers(e, v:getModifiers())
 			e.returnType = jniwrap.fromJavaString(Class(v:getReturnType()):getName())
 
-			local params = v:getParameterTypes()
-			for j = 1, jniwrap.env.GetArrayLength(params) do
-				local w = Class(jniwrap.env.GetObjectArrayElement(params, j-1))
-				e["arg"..j] = jniwrap.fromJavaString(w:getName())
+			local params = jniwrap.wrapArray(Class, v:getParameterTypes())
+			for j, w in params:ipairs() do
+				e["arg"..j+1] = jniwrap.fromJavaString(w:getName())
 			end
 		end
 
@@ -125,12 +124,13 @@ return function(jniwrap)
 			local e = appendElem(simpleName)
 			addModifiers(e, v:getModifiers())
 
-			local params = v:getParameterTypes()
-			for j = 1, jniwrap.env.GetArrayLength(params) do
-				local w = Class(jniwrap.env.GetObjectArrayElement(params, j-1))
+			local params = jniwrap.wrapArray(Class, v:getParameterTypes())
+			for j, w in params:ipairs() do
 				e["arg"..j] = jniwrap.fromJavaString(w:getName())
 			end
 		end
+
+		collectgarbage()
 
 		return t
 	end

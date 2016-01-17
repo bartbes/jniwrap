@@ -10,7 +10,7 @@ return function(jniwrap)
 	mts.Object = {}
 	function mts.Object.__index(self, index)
 		validateIndex(self.arr, index)
-		return jniwrap.env.GetObjectArrayElement(self.arr, index)
+		return jniwrap.doGc(jniwrap.env.GetObjectArrayElement(self.arr, index))
 	end
 
 	function mts.Object.__newindex(self, index, value)
@@ -23,7 +23,7 @@ return function(jniwrap)
 		return function(state, i)
 			i = i + 1
 			if i >= len then return nil end
-			return i, jniwrap.env.GetObjectArrayElement(self.arr, i)
+			return i, jniwrap.doGc(jniwrap.env.GetObjectArrayElement(self.arr, i))
 		end, nil, -1
 	end
 
@@ -96,6 +96,7 @@ return function(jniwrap)
 			end
 		end
 
+		jniwrap.doGc(arr)
 		local t = {arr = arr, ipairs = mts[type].ipairs}
 		return setmetatable(t, mts[type])
 	end
