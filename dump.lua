@@ -1,6 +1,5 @@
 local jni
 local inifile = require "jniwrap.inifile"
-local bit = require "bit"
 
 local function main()
 	jni = require "jniwrap.init"
