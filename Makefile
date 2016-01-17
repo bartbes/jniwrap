@@ -16,4 +16,4 @@ jniwrap/cdefs.lua: aosp-jni.h dumpcdefs.sh
 andtest.love: $(wildcard android/*) $(wildcard jniwrap/*)
 	$(RM) $@
 	@zip -j $@ android/main.lua
-	@zip $@ $^
+	@zip -r $@ $^

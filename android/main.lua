@@ -1,5 +1,13 @@
 local jni = require "jniwrap"
-local ffi = require "ffi"
+local lovejni = require "jniwrap.love"
+local import = require "jniwrap.import"
+
+import:setPrefix("")
+local Activity = import "android.app.Activity"
+local Intent = import "android.content.Intent"
+local Uri = import "android.net.Uri"
+local UriBuilder = import "android.net.Uri.Builder"
+local ActivityInfo = import "android.content.pm.ActivityInfo"
 
 local logMsg = ""
 local function log(fmt, ...)
@@ -14,24 +22,7 @@ function love.load()
 	switched = false
 	opened = false
 
-	ffi.cdef [[
-		JNIEnv *SDL_AndroidGetJNIEnv();
-		jobject SDL_AndroidGetActivity();
-	]]
-
-	local env = ffi.C.SDL_AndroidGetJNIEnv()
-	jni.setEnv(env)
-
-	Activity = jni.wrapClass("android/Activity.ini")
-	Intent = jni.wrapClass("android/Intent.ini")
-	Uri = jni.wrapClass("android/Uri.ini")
-	UriBuilder = jni.wrapClass("android/UriBuilder.ini")
-	ActivityInfo = jni.wrapClass("android/ActivityInfo.ini")
-
-	activity = ffi.C.SDL_AndroidGetActivity()
-	log("Raw activity: %s", tostring(activity))
-	activity = Activity(activity)
-	log("Wrapped activity: %s", tostring(activity))
+	activity = Activity(lovejni.activity)
 end
 
 function love.update(dt)
