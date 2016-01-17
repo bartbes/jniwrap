@@ -64,9 +64,9 @@ return function(jniwrap)
 		t.class.name = jniwrap.fromJavaString(class:getName())
 		local simpleName = t.class.name:match("[^%.$]+$")
 
-		local constructors = class:getConstructors()
-		local fields = class:getFields()
-		local methods = class:getMethods()
+		local constructors = jniwrap.wrapArray(Constructor, class:getConstructors())
+		local fields = jniwrap.wrapArray(Field, class:getFields())
+		local methods = jniwrap.wrapArray(Method, class:getMethods())
 
 		local function appendElem(name, elem)
 			elem = elem or {}
@@ -99,8 +99,7 @@ return function(jniwrap)
 			end
 		end
 
-		for i = 0, jniwrap.env.GetArrayLength(fields)-1 do
-			local v = Field(jniwrap.env.GetObjectArrayElement(fields, i))
+		for i, v in fields:ipairs() do
 			local name = jniwrap.fromJavaString(v:getName())
 
 			local e = appendElem(name, {field = true})
@@ -108,8 +107,7 @@ return function(jniwrap)
 			e.type = jniwrap.fromJavaString(Class(v:getType()):getName())
 		end
 
-		for i = 0, jniwrap.env.GetArrayLength(methods)-1 do
-			local v = Method(jniwrap.env.GetObjectArrayElement(methods, i))
+		for i, v in methods:ipairs() do
 			local name = jniwrap.fromJavaString(v:getName())
 
 			local e = appendElem(name)
@@ -123,9 +121,7 @@ return function(jniwrap)
 			end
 		end
 
-		for i = 0, jniwrap.env.GetArrayLength(constructors)-1 do
-			local v = Constructor(jniwrap.env.GetObjectArrayElement(constructors, i))
-
+		for i, v in constructors:ipairs() do
 			local e = appendElem(simpleName)
 			addModifiers(e, v:getModifiers())
 
