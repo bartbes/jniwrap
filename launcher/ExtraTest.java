@@ -22,4 +22,16 @@ public class ExtraTest
 	{
 		myIntField = 2*myIntField;
 	}
+
+	public int[] getIntValues()
+	{
+		return new int[]{myIntField, 1, 2, 3};
+	}
+
+	public double[] mathConstants = new double[]{3.14, 2.72, 1.41};
+
+	public double getSqrtTwo()
+	{
+		return mathConstants[2];
+	}
 }
