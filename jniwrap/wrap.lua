@@ -129,6 +129,7 @@ return function(jniwrap)
 		ffi.gc(class, function()
 			jniwrap.env.DeleteGlobalRef(class)
 		end)
+		out.class = class
 
 		definition.class = nil
 
