@@ -57,16 +57,16 @@ return function(jniwrap)
 
 	function jniwrap.dumpClass(className)
 		init()
-		local class = Class(Class.forName(jniwrap.toJavaString(className)))
+		local class = Class.forName(className)
 
 		local t = {}
 		t.class = {}
-		t.class.name = jniwrap.fromJavaString(class:getName())
+		t.class.name = class:getName()
 		local simpleName = t.class.name:match("[^%.$]+$")
 
-		local constructors = jniwrap.wrapArray(Constructor, class:getConstructors())
-		local fields = jniwrap.wrapArray(Field, class:getFields())
-		local methods = jniwrap.wrapArray(Method, class:getMethods())
+		local constructors = class:getConstructors()
+		local fields = class:getFields()
+		local methods = class:getMethods()
 
 		local function appendElem(name, elem)
 			elem = elem or {}
@@ -100,23 +100,23 @@ return function(jniwrap)
 		end
 
 		for i, v in fields:ipairs() do
-			local name = jniwrap.fromJavaString(v:getName())
+			local name = v:getName()
 
 			local e = appendElem(name, {field = true})
 			addModifiers(e, v:getModifiers())
-			e.type = jniwrap.fromJavaString(Class(v:getType()):getName())
+			e.type = v:getType():getName()
 		end
 
 		for i, v in methods:ipairs() do
-			local name = jniwrap.fromJavaString(v:getName())
+			local name = v:getName()
 
 			local e = appendElem(name)
 			addModifiers(e, v:getModifiers())
-			e.returnType = jniwrap.fromJavaString(Class(v:getReturnType()):getName())
+			e.returnType = v:getReturnType():getName()
 
-			local params = jniwrap.wrapArray(Class, v:getParameterTypes())
+			local params = v:getParameterTypes()
 			for j, w in params:ipairs() do
-				e["arg"..j+1] = jniwrap.fromJavaString(w:getName())
+				e["arg"..j+1] = w:getName()
 			end
 		end
 
@@ -124,9 +124,9 @@ return function(jniwrap)
 			local e = appendElem(simpleName)
 			addModifiers(e, v:getModifiers())
 
-			local params = jniwrap.wrapArray(Class, v:getParameterTypes())
+			local params = v:getParameterTypes()
 			for j, w in params:ipairs() do
-				e["arg"..j] = jniwrap.fromJavaString(w:getName())
+				e["arg"..j] = w:getName()
 			end
 		end
 

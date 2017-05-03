@@ -24,20 +24,20 @@ local function main()
 	e:doubleInt()
 	assert(e:myIntField() == 42)
 
-	local ints = jni.wrapArray("int", e:getIntValues())
+	local ints = e:getIntValues()
 	for i, v in ints:ipairs() do
 		print(("Integer %d: %d"):format(i+1, v))
 	end
 
-	local constants = jni.wrapArray("double", e:mathConstants())
+	local constants = e:mathConstants()
 	assert(math.pi-constants[0] < 0.1)
 	constants[2] = 2
 	assert(e:getSqrtTwo() == 2)
 
 	-- java.util.UUID
 	local UUID = import "java.util.UUID"
-	local u = UUID(UUID.randomUUID())
-	print(jni.fromJavaString(u:toString()))
+	local u = UUID.randomUUID()
+	print(u:toString())
 end
 
 -- The launcher doesn't have error checking, so here's an xpcall instead
