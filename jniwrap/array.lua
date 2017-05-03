@@ -60,7 +60,7 @@ return function(jniwrap)
 			end, nil, -1
 		end
 
-		mts[type] = mt
+		return mt
 	end
 
 	local function newBoxedMt(wrapf)
@@ -72,7 +72,7 @@ return function(jniwrap)
 
 		function mt.__newindex(self, index, value)
 			validateIndex(self.arr, index)
-			return jniwrap.env.SetObjectArrayElement(self.arr, index, jniwrap.unwrapObject(value))
+			return jniwrap.env.SetObjectArrayElement(self.arr, index, jniwrap.unbox(value))
 		end
 
 		function mt.ipairs(self)
@@ -84,20 +84,24 @@ return function(jniwrap)
 			end, nil, -1
 		end
 
-		mts[wrapf] = mt
+		return mt
 	end
 
 	function jniwrap.wrapArray(type, arr)
 		if not mts[type] then
 			if jniwrap.simpleTypeSignatures[type] then
-				newPrimitiveMt(type)
+				mts[type] = newPrimitiveMt(type)
 			else
-				newBoxedMt(type)
+				mts[type] = newBoxedMt(function(obj) return jniwrap.box(type, obj) end)
 			end
 		end
 
 		jniwrap.doGc(arr)
 		local t = {arr = arr, ipairs = mts[type].ipairs}
 		return setmetatable(t, mts[type])
+	end
+
+	function jniwrap.unwrapArray(arr)
+		return arr.arr
 	end
 end

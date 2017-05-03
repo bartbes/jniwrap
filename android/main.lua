@@ -22,7 +22,7 @@ function love.load()
 	switched = false
 	opened = false
 
-	activity = Activity(lovejni.activity)
+	activity = jniwrap.box("android.app.Activity", lovejni.activity)
 end
 
 function love.update(dt)
@@ -38,15 +38,15 @@ function love.update(dt)
 
 	if timer2 == 0 and not opened then
 		opened = true
-		local target = Uri.parse(jni.toJavaString("https://love2d.org/"))
+		local target = Uri.parse("https://love2d.org/")
 		log("Target: %s", tostring(target))
 
 		local intent = Intent.Intent1(Intent.ACTION_VIEW())
 		intent:setData(target)
 		intent:addFlags(Intent.FLAG_ACTIVITY_NEW_TASK())
 
-		log("Starting intent: %s", tostring(jni.unwrapObject(intent)))
-		activity:startActivity(jni.unwrapObject(intent))
+		log("Starting intent: %s", tostring(jni.unbox(intent)))
+		activity:startActivity(intent)
 	end
 end
 

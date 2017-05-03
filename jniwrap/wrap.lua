@@ -2,7 +2,6 @@ local ffi = require "ffi"
 
 return function(jniwrap)
 	local instance = {}
-	local private = {}
 
 	local ThrowableDef =
 	{
@@ -42,23 +41,48 @@ return function(jniwrap)
 		error(message)
 	end
 
-	function jniwrap.wrapMethod(class, name, def, out, aliases, luaName)
-		local signature, rettype = jniwrap.calculateSignature(def, aliases)
+	local function generateAutobox(type, input)
+		local elementtype = type:match("^(.-)%[%]$")
+		if elementtype then
+			return ("jni.wrapArray(%q, %s)"):format(elementtype, input)
+		elseif type == "java.lang.String" then
+			return ("jni.fromJavaString(%s)"):format(input)
+		elseif not jniwrap.simpleTypeSignatures[type] then
+			return ("box(%q, %s)"):format(type, input)
+		end
+		return input
+	end
 
-		local callf = "Call"
+	local function generateAutounbox(type, input)
+		local elementtype = type:match("^(.-)%[%]$")
+		if elementtype then
+			return ("jni.unwrapArray(%s)"):format(input)
+		elseif type == "java.lang.String" then
+			return ("jni.toJavaString(%s)"):format(input)
+		elseif not jniwrap.simpleTypeSignatures[type] then
+			return ("unbox(%s)"):format(input)
+		end
+		return input
+	end
+
+	function jniwrap.wrapMethod(class, name, def, out, aliases, luaName)
+		local signature, retsig, rettype = jniwrap.calculateSignature(def, aliases)
+
+		local callf = ""
 		local gmidf = "GetMethodID"
+
+		callf = jniwrap.invSimpleTypeSignatures[retsig] or "Object"
+		callf = callf:sub(1, 1):upper() .. callf:sub(2)
+
 		if def.static then
 			gmidf = "GetStaticMethodID"
-			callf = callf .. "Static"
+			callf = "Static" .. callf
 		end
 
-		rettype = jniwrap.invSimpleTypeSignatures[rettype] or "object"
-		rettype = rettype:sub(1, 1):upper() .. rettype:sub(2)
-		callf = callf .. rettype .. "Method"
+		callf = "Call" .. callf .. "Method"
 
 		local paramDef = {}
 		local paramCall = {""}
-		local box = ""
 		local classOrSelf = "class"
 
 		if not def.static and not def.constructor then
@@ -67,25 +91,17 @@ return function(jniwrap)
 		end
 		if def.constructor then
 			callf = "NewObject"
+			rettype = aliases.self
 		end
-		-- TODO: "Box" strings
-		-- TODO: Box arrays
-		-- TODO: Box to right type
-		if rettype == "Object" or def.constructor then
-			box = "result = box(result)" -- TODO
-		end
+
+		local box = generateAutobox(rettype, "result")
 
 		for i = 1, math.huge do
 			local arg = "arg" .. i
-			if not def[arg] then break end
+			local type = def[arg] and jniwrap.resolveAliases(def[arg], aliases)
+			if not type then break end
 			table.insert(paramDef, arg)
-			if jniwrap.simpleTypeSignatures[def[arg]] then
-				table.insert(paramCall, arg)
-			elseif def[arg] == "String" then -- TODO canonicalize to java.lang.String
-				table.insert(paramCall, "jni.toJavaString(" .. arg .. ")")
-			else
-				table.insert(paramCall, "unbox(" .. arg .. ")") -- TODO
-			end
+			table.insert(paramCall, generateAutounbox(type, arg))
 		end
 
 		paramDef = table.concat(paramDef, ", ")
@@ -95,38 +111,34 @@ return function(jniwrap)
 			methodids.%s = env.%s(class, %q, %q)
 			function wrapper.%s(%s)
 				local result = env.%s(%s, methodids.%s%s)
-				%s
-				return result
+				return %s
 			end
 		]]):format(luaName, gmidf, name, signature, luaName, paramDef, callf, classOrSelf, luaName, paramCall, box)
 	end
 
 	function jniwrap.wrapField(class, name, def, out, aliases, luaName)
 		local signature = jniwrap.signatureFor(def.type, aliases)
+		local rettype = jniwrap.resolveAliases(def.type, aliases)
 
 		local gfidf = "GetFieldID"
 		local callf = ""
 		local self = "self, "
 		local classOrInstance = "unbox(self)"
 
+		local callf = jniwrap.invSimpleTypeSignatures[signature] or "Object"
+		callf = callf:sub(1, 1):upper() .. callf:sub(2)
+		callf = callf .. "Field"
+
 		if def.static then
 			fieldid = jniwrap.env.GetStaticFieldID(class, name, signature)
 			gfidf = "GetStaticFieldID"
-			callf = callf .. "Static"
+			callf = "Static" .. callf
 			classOrInstance = "class"
 			self = ""
 		end
 
-		local rettype = jniwrap.invSimpleTypeSignatures[signature] or "object"
-		rettype = rettype:sub(1, 1):upper() .. rettype:sub(2)
-		callf = callf .. rettype .. "Field"
-
-		local box = ""
-		if rettype == "Object" then
-			box = "result = box(result)" -- TODO
-		end
-
-		local setArg = "(...)" -- TODO: Autounboxing
+		local box = generateAutobox(rettype, "result")
+		local setArg = generateAutounbox(rettype, "(...)")
 
 		-- TODO: Separate getter/setter?
 		return ([[
@@ -136,8 +148,7 @@ return function(jniwrap)
 					return env.Set%s(%s, fieldids.%s, %s)
 				else
 					local result = env.Get%s(%s, fieldids.%s)
-					%s
-					return result
+					return %s
 				end
 			end
 		]]):format(luaName, gfidf, name, signature, luaName, self, callf, classOrInstance, luaName, setArg, callf, classOrInstance, luaName, box)
@@ -149,6 +160,7 @@ return function(jniwrap)
 		end
 
 		local out = {}
+		local origclassname = definition.class.name
 		local classname = definition.class.name:gsub("%.", "/")
 		local class = jniwrap.env.FindClass(classname)
 		errorOnException()
@@ -161,10 +173,7 @@ return function(jniwrap)
 		out[1] = [[
 			local jni, env, name, class = ...
 
-			local function box(v)
-				return jni.box(name, v)
-			end
-
+			local box = jni.box
 			local unbox = jni.unbox
 
 			local fieldids, methodids = {}, {}
@@ -173,7 +182,7 @@ return function(jniwrap)
 
 		definition.class = nil
 
-		local aliases = {self = classname}
+		local aliases = {self = origclassname}
 		if definition[":aliases:"] then
 			for i, v in pairs(definition[":aliases:"]) do
 				aliases[i] = v
@@ -201,35 +210,33 @@ return function(jniwrap)
 		]])
 
 		local code = table.concat(out, "\n")
-		local lineNo = 0
+		--[[local lineNo = 0
 		for line in code:gmatch("(.-)\n") do
 			lineNo = lineNo + 1
 			print(lineNo, line)
-		end
-		local f = loadstring(code, "Generated code for java class " .. classname)
-		return f(private, jniwrap.env, classname, class)
+		end]]
+		local f = loadstring(code, "Generated code for java class " .. origclassname)
+		return f(jniwrap, jniwrap.env, origclassname, class)
 	end
 
 	local wrappers = {}
 	local mts = {}
-	function private.boxFor(className)
+	function jniwrap.boxFor(className)
 		if not wrappers[className] then
 			wrappers[className] = {}
 		end
 		return wrappers[className]
 	end
 
-	function private.box(className, object)
+	function jniwrap.box(className, object)
 		if not mts[className] then
-			mts[className] = {__index = private.boxFor(className)}
+			mts[className] = {__index = jniwrap.boxFor(className)}
 		end
 		jniwrap.doGc(object)
 		return setmetatable({[instance] = object}, mts[className])
 	end
 
-	function private.unbox(obj)
+	function jniwrap.unbox(obj)
 		return obj[instance]
 	end
-
-	private.toJavaString = jniwrap.toJavaString
 end
