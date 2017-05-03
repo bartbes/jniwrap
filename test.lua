@@ -17,7 +17,7 @@ local function main()
 	ExtraTest.someJava()
 	local e = ExtraTest.ExtraTest()
 	e:someMoreJava()
-	e:printString(jni.toJavaString("Hello, world!"))
+	e:printString("Hello, world!")
 
 	print(e:myIntField())
 	e:myIntField(21)
