@@ -29,10 +29,10 @@ return function(jniwrap)
 		if not Throwable then
 			Throwable = jniwrap.wrapClass(ThrowableDef)
 		end
-		exception = Throwable(exception)
+		exception = jniwrap.box("java.lang.Throwable", exception)
 
 		-- Now finally we get to extract data
-		local message = jniwrap.fromJavaString(exception:toString())
+		local message = exception:toString()
 
 		-- We're safe, we've handled the exception
 		inException = false
