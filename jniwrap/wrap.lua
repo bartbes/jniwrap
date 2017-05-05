@@ -229,6 +229,7 @@ return function(jniwrap)
 	end
 
 	function jniwrap.box(className, object)
+		if object == nil then return nil end
 		if not mts[className] then
 			mts[className] = {__index = jniwrap.boxFor(className)}
 		end
@@ -237,6 +238,7 @@ return function(jniwrap)
 	end
 
 	function jniwrap.unbox(obj)
+		if obj == nil then return nil end
 		return obj[instance]
 	end
 end

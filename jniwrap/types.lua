@@ -95,6 +95,7 @@ return function(jniwrap)
 	end
 
 	function jniwrap.fromJavaString(str)
+		if str == nil then return nil end
 		local chars = jniwrap.env.GetStringUTFChars(str, nil)
 		local length = jniwrap.env.GetStringUTFLength(str)
 		local luastr = ffi.string(chars, length)
@@ -103,6 +104,7 @@ return function(jniwrap)
 	end
 
 	function jniwrap.toJavaString(str)
+		if str == nil then return nil end
 		local modified = str:gsub("%z", string.char(0xc0, 0x80))
 		return jniwrap.env.NewStringUTF(modified)
 	end

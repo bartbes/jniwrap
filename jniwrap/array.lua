@@ -96,6 +96,7 @@ return function(jniwrap)
 	end
 
 	function jniwrap.wrapArray(type, arr)
+		if arr == nil then return nil end
 		if not mts[type] then
 			if jniwrap.simpleTypeSignatures[type] then
 				mts[type] = newPrimitiveMt(type)
@@ -110,6 +111,7 @@ return function(jniwrap)
 	end
 
 	function jniwrap.unwrapArray(arr)
+		if arr == nil then return nil end
 		return arr.arr
 	end
 
