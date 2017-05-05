@@ -127,7 +127,7 @@ return function(jniwrap)
 
 		-- Object arrays require type info.
 		local classname = type:gsub("%.", "/")
-		local class = jniwrap.env.FindClass(classname)
+		local class = jniwrap.findClass(classname)
 		local arr = jniwrap.env.NewObjectArray(length, class, nil)
 		return jniwrap.wrapArray(type, arr)
 	end
