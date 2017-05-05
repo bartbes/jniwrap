@@ -162,7 +162,7 @@ return function(jniwrap)
 		local out = {}
 		local origclassname = definition.class.name
 		local classname = definition.class.name:gsub("%.", "/")
-		local class = jniwrap.env.FindClass(classname)
+		local class = jniwrap.findClass(classname)
 		errorOnException()
 
 		class = ffi.cast("jclass", jniwrap.env.NewGlobalRef(class))

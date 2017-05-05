@@ -20,6 +20,10 @@ function jniwrap.doGc(ref)
 	return ffi.gc(ref, jniwrap.env.DeleteLocalRef)
 end
 
+function jniwrap.findClass(name)
+	return jniwrap.env.FindClass(name)
+end
+
 for i, v in ipairs{"env", "types", "wrap", "array", "dump"} do
 	local f = require(basename .. v)
 	f(jniwrap)
