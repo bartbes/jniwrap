@@ -60,6 +60,10 @@ return function(jniwrap)
 			end, nil, -1
 		end
 
+		function mt.length(self)
+			return jniwrap.env.GetArrayLength(self.arr)
+		end
+
 		return mt
 	end
 
@@ -84,6 +88,10 @@ return function(jniwrap)
 			end, nil, -1
 		end
 
+		function mt.length(self)
+			return jniwrap.env.GetArrayLength(self.arr)
+		end
+
 		return mt
 	end
 
@@ -97,11 +105,28 @@ return function(jniwrap)
 		end
 
 		jniwrap.doGc(arr)
-		local t = {arr = arr, ipairs = mts[type].ipairs}
+		local t = {arr = arr, ipairs = mts[type].ipairs, length = mts[type].length}
 		return setmetatable(t, mts[type])
 	end
 
 	function jniwrap.unwrapArray(arr)
 		return arr.arr
+	end
+
+	function jniwrap.newArray(type, length)
+		type = jniwrap.resolveAliases(type, {})
+
+		-- Primitive arrays are easy...
+		if jniwrap.simpleTypeSignatures[type] then
+			local newf = "New" .. type:sub(1,1):upper() .. type:sub(2) .. "Array"
+			local arr = jniwrap.env[newf](length)
+			return jniwrap.wrapArray(type, arr)
+		end
+
+		-- Object arrays require type info.
+		local classname = type:gsub("%.", "/")
+		local class = jniwrap.env.FindClass(classname)
+		local arr = jniwrap.env.NewObjectArray(length, class, nil)
+		return jniwrap.wrapArray(type, arr)
 	end
 end
